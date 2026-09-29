@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AM Premium Panel</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Press Start 2P', monospace;
+            user-select: none;
+        }
+
+        /* Body diizinkan scroll */
+        body {
+            background-color: #e8e8e8;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 10px 0;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Container HP - tidak dipaksa 100vh, bisa memanjang */
+        #app-container {
+            width: 100%;
+            max-width: 420px;
+            min-height: 100vh;
+            background-color: #fdfdfd;
+            position: relative;
+            border: 4px solid #000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+            margin-bottom: 10px;
+        }
+
+        /* Halaman */
+        .page {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            padding: 20px;
+            flex: 1;
+        }
+        .page.active {
+            display: flex;
+        }
+
+        /* ====== STYLE LOGIN ====== */
+        #page-login {
+            justify-content: center;
+            align-items: center;
+            background-color: #fdfdfd;
+            min-height: 100vh;
+        }
+        .login-box {
+            width: 100%;
+            max-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .login-box h1 {
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .input-group {
+            position: relative;
+            width: 100%;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px 40px 12px 12px;
+            border: 2px solid #000;
+            font-size: 10px;
+            outline: none;
+            background: #fff;
+        }
+        .input-group input:focus {
+            border-color: #f39c12;
+        }
+        .toggle-pw {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+        }
+        .toggle-pw svg {
+            width: 18px;
+            height: 18px;
+        }
+        .btn-login {
+            padding: 12px;
+            border: 2px solid #000;
+            background-color: #f39c12;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #000;
+            transition: all 0.1s;
+        }
+        .btn-login:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #000;
+        }
+        .link-beli {
+            text-align: center;
+            font-size: 9px;
+            color: #2980b9;
+            cursor: pointer;
+            text-decoration: underline;
+            margin-top: 10px;
+        }
+
+        /* ====== STYLE MENU UTAMA ====== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #000;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+        .header h2 {
+            font-size: 14px;
+        }
+        .btn-logout {
+            background: #e74c3c;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 6px 10px;
+            font-size: 9px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 #000;
+        }
+
+        /* Menu List */
+        .menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border: 2px solid #000;
+            background: #fff;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #000;
+            transition: all 0.1s;
+        }
+        .menu-item:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #000;
+        }
+        .menu-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .menu-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: #fff;
+        }
+        .menu-text {
+            flex: 1;
+        }
+        .menu-text h3 {
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+        .menu-text p {
+            font-size: 8px;
+            color: #777;
+        }
+        .menu-arrow {
+            font-size: 14px;
+            color: #999;
+        }
+
+        /* Warna icon */
+        .icon-yellow { background-color: #f1c40f; }
+        .icon-blue { background-color: #3498db; }
+        .icon-pink { background-color: #e84393; }
+        .icon-green { background-color: #2ecc71; }
+
+        /* Toolbar Bawah - selalu di bawah */
+        .toolbar {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            border-top: 2px solid #000;
+            background: #fdfdfd;
+            flex-shrink: 0;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .toolbar-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            gap: 4px;
+            opacity: 0.5;
+            transition: 0.2s;
+            font-size: 8px;
+            color: #333;
+            flex: 1;
+        }
+        .toolbar-item.active {
+            opacity: 1;
+            font-weight: bold;
+        }
+        .toolbar-item .icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .toolbar-item .icon svg {
+            width: 18px;
+            height: 18px;
+            fill: #333;
+        }
+
+        /* POP UP MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-box {
+            background: #fff;
+            border: 3px solid #000;
+            padding: 20px;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 5px 5px 0 #000;
+            position: relative;
+            text-align: center;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .modal-box p {
+            font-size: 9px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            text-align: left;
+            white-space: pre-line;
+        }
+        .modal-box .close-modal {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #e74c3c;
+            color: #fff;
+            border: 2px solid #000;
+            width: 25px;
+            height: 25px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-box .close-modal svg {
+            width: 12px;
+            height: 12px;
+            fill: #fff;
+        }
+        .modal-box input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #000;
+            font-size: 10px;
+            margin-bottom: 10px;
+            outline: none;
+        }
+        .modal-box .btn-modal {
+            padding: 10px 20px;
+            border: 2px solid #000;
+            background: #f39c12;
+            font-size: 10px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 #000;
+        }
+        .modal-box .btn-modal:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0 #000;
+        }
+
+        /* History */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border: 2px solid #000;
+            font-size: 9px;
+            background: #f9f9f9;
+        }
+        .status-sukses { color: #2ecc71; font-weight: bold; }
+        .status-gagal { color: #e74c3c; font-weight: bold; }
+
+        /* Developer Control Menu */
+        .control-section {
+            border: 2px solid #000;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #fff;
+        }
+        .control-section h3 {
+            font-size: 10px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .control-section input, .control-section select {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #000;
+            font-size: 9px;
+            margin-bottom: 8px;
+            outline: none;
+        }
+        .control-section button {
+            padding: 8px 15px;
+            border: 2px solid #000;
+            background: #f39c12;
+            font-size: 9px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 #000;
+            width: 100%;
+        }
+        .control-section button:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0 #000;
+        }
+
+        /* Halaman Expired */
+        #page-expired {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: #fff;
+            min-height: 100vh;
+        }
+        #page-expired h1 {
+            font-size: 14px;
+            color: #e74c3c;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        #page-expired .btn-chat {
+            padding: 12px 24px;
+            border: 2px solid #000;
+            background: #2980b9;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0 #000;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        #page-expired .btn-chat:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #000;
+        }
+        #page-expired .btn-logout-expired {
+            margin-top: 20px;
+            background: #e74c3c;
+            color: #fff;
+            border: 2px solid #000;
+            padding: 10px 20px;
+            font-size: 10px;
+            cursor: pointer;
+            box-shadow: 2px 2px 0 #000;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+
+    <!-- ================= PAGE 1: LOGIN ================= -->
+    <div id="page-login" class="page active">
+        <div class="login-box">
+            <h1>LOGIN AKUN</h1>
+            <div class="input-group">
+                <input type="text" id="login-username" placeholder="Username" autocomplete="off">
+            </div>
+            <div class="input-group">
+                <input type="password" id="login-password" placeholder="Password" autocomplete="off">
+                <button class="toggle-pw" id="toggle-password" type="button">
+                    <svg id="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <svg id="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                    </svg>
+                </button>
+            </div>
+            <button class="btn-login" id="btn-login">MASUK</button>
+            <div class="link-beli" id="link-beli">klik untuk beli akses</div>
+        </div>
+    </div>
+
+    <!-- ================= PAGE 2: DASHBOARD (BERANDA) ================= -->
+    <div id="page-dashboard" class="page">
+        <div class="header">
+            <h2>BERANDA</h2>
+            <button class="btn-logout" id="btn-logout">LOG OUT</button>
+        </div>
+        
+        <div class="menu-list">
+            <!-- Tombol UPGARDE AM -->
+            <div class="menu-item" id="btn-tutor" style="border-color: #2980b9; background: #eaf2f8;">
+                <div class="menu-icon icon-blue" style="background: #2980b9;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                    </svg>
+                </div>
+                <div class="menu-text">
+                    <h3>UPGARDE AM</h3>
+                    <p>Panduan Upgrade AM Premium</p>
+                </div>
+                <div class="menu-arrow">›</div>
+            </div>
+        </div>
+
+        <!-- Toolbar Bawah -->
+        <div class="toolbar">
+            <div class="toolbar-item active" data-page="dashboard">
+                <span class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </span>
+                <span>BERANDA</span>
+            </div>
+            <div class="toolbar-item" data-page="control" id="nav-control" style="display: none;">
+                <span class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </span>
+                <span>CONTROL</span>
+            </div>
+            <div class="toolbar-item" data-page="history">
+                <span class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </span>
+                <span>HISTORY</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PAGE 3: CONTROL ================= -->
+    <div id="page-control" class="page">
+        <div class="header">
+            <h2>CONTROL</h2>
+            <button class="btn-logout" onclick="logout()">LOG OUT</button>
+        </div>
+
+        <div class="control-section">
+            <h3>BUAT AKUN AKSES</h3>
+            <input type="text" id="buat-username" placeholder="USERNAME:">
+            <input type="text" id="buat-password" placeholder="PASSWORD:">
+            <input type="text" id="buat-expired" placeholder="EXPIRED (Hari / PERMANEN):">
+            <select id="buat-role">
+                <option value="user">user</option>
+                <option value="resseler" id="opsi-resseler">resseler</option>
+            </select>
+            <button id="btn-buat-akun">BUAT</button>
+        </div>
+
+        <div class="control-section">
+            <h3>PERPANJANGAN AKUN</h3>
+            <input type="text" id="panjang-username" placeholder="MASUKKAN USERNAME:">
+            <input type="text" id="panjang-expired" placeholder="EXPIRED (Jumlah Hari):">
+            <button id="btn-perpanjang">PERPANJANG</button>
+        </div>
+
+        <!-- Toolbar Bawah -->
+        <div class="toolbar">
+            <div class="toolbar-item" data-page="dashboard">
+                <span class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </span>
+                <span>BERANDA</span>
+            </div>
+            <div class="toolbar-item active" data-page="control" id="nav-control-bawah" style="display: none;">
+                <span class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </span>
+                <span>CONTROL</span>
+            </div>
+            <div class="toolbar-item" data-page="history">
+                <span class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </span>
+                <span>HISTORY</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PAGE 4: HISTORY ================= -->
+    <div id="page-history" class="page">
+        <div class="header">
+            <h2>HISTORY</h2>
+            <button class="btn-logout" onclick="logout()">LOG OUT</button>
+        </div>
+
+        <div class="history-list" id="history-list">
+            <p style="font-size: 9px; text-align: center; color: #777;">Belum ada riwayat.</p>
+        </div>
+
+        <!-- Toolbar Bawah -->
+        <div class="toolbar">
+            <div class="toolbar-item" data-page="dashboard">
+                <span class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                </span>
+                <span>BERANDA</span>
+            </div>
+            <div class="toolbar-item" data-page="control" id="nav-control-history" style="display: none;">
+                <span class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                </span>
+                <span>CONTROL</span>
+            </div>
+            <div class="toolbar-item active" data-page="history">
+                <span class="icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </span>
+                <span>HISTORY</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PAGE 5: EXPIRED ================= -->
+    <div id="page-expired" class="page">
+        <h1>ANDA SUDAH KEHABISAN AKSES SILAHKAN PERPANJANGAN AKSES DENGAN CHAT DEVELOPER</h1>
+        <a href="https://wa.me/6285134733477?text=bang+wann+mau+perpanjang+akses" target="_blank" class="btn-chat">CHAT DEV</a>
+        <button class="btn-logout-expired" onclick="logout()">LOG OUT</button>
+    </div>
+
+    <!-- ================= MODAL / POP UP ================= -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-box" id="modal-box">
+            <button class="close-modal" id="close-modal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <div id="modal-content">
+                <!-- Konten dinamis -->
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // ============================================================
+    // KONFIGURASI FIREBASE
+    // ============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyCdwUEySC9iyBS_MWsOWl1NlEBu2btDytY",
+        authDomain: "wann-am-prem1.firebaseapp.com",
+        databaseURL: "https://wann-am-prem1-default-rtdb.firebaseio.com",
+        projectId: "wann-am-prem1",
+        storageBucket: "wann-am-prem1.firebasestorage.app",
+        messagingSenderId: "1095782773528",
+        appId: "1:1095782773528:web:3336b3bf14c362fe27646d",
+        measurementId: "G-0QRY7E0YCL"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const API_KEY_URL = 'https://aliicia.my.id/api/amprem';
+
+    // ============================================================
+    // VARIABEL GLOBAL
+    // ============================================================
+    let currentUser = null;
+    let currentPage = 'login';
+    let isDeveloper = false;
+    let isResselier = false;
+    let pendingEmail = '';
+
+    const DEV_ACCOUNT = {
+        username: 'wannxzy',
+        password: 'wann200313',
+        role: 'developer',
+        expired: 'PERMANEN'
+    };
+
+    // ============================================================
+    // FUNGSI UTAMA: NAVIGASI & POP UP
+    // ============================================================
+    function showPage(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        currentPage = pageId;
+
+        // Scroll ke atas setiap ganti halaman
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        document.querySelectorAll('.toolbar-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.page === pageId) item.classList.add('active');
+        });
+
+        const controlNavs = ['nav-control', 'nav-control-bawah', 'nav-control-history'];
+        const showControl = isDeveloper || isResselier;
+        controlNavs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.display = showControl ? 'flex' : 'none';
+            }
+        });
+
+        const opsiResseler = document.getElementById('opsi-resseler');
+        if (opsiResseler) {
+            if (isResselier && !isDeveloper) {
+                opsiResseler.style.display = 'none';
+                document.getElementById('buat-role').value = 'user';
+            } else {
+                opsiResseler.style.display = 'block';
+            }
+        }
+
+        if (pageId === 'history') {
+            renderHistory();
+        }
+    }
+
+    function showModal(contentHtml, isAutoClose = false) {
+        const modal = document.getElementById('modal-overlay');
+        const content = document.getElementById('modal-content');
+        content.innerHTML = contentHtml;
+        modal.classList.add('show');
+
+        document.getElementById('close-modal').onclick = function() {
+            modal.classList.remove('show');
+        };
+
+        if (isAutoClose) {
+            setTimeout(() => {
+                modal.classList.remove('show');
+            }, 3000);
+        }
+    }
+
+    // ============================================================
+    // FUNGSI LOGIN & LOGOUT
+    // ============================================================
+    document.getElementById('toggle-password').addEventListener('click', function() {
+        const pwInput = document.getElementById('login-password');
+        const eyeOpen = document.getElementById('eye-open');
+        const eyeClosed = document.getElementById('eye-closed');
+
+        if (pwInput.type === 'password') {
+            pwInput.type = 'text';
+            eyeOpen.style.display = 'none';
+            eyeClosed.style.display = 'block';
+        } else {
+            pwInput.type = 'password';
+            eyeOpen.style.display = 'block';
+            eyeClosed.style.display = 'none';
+        }
+    });
+
+    document.getElementById('btn-login').addEventListener('click', function() {
+        const userIn = document.getElementById('login-username').value.trim();
+        const passIn = document.getElementById('login-password').value.trim();
+
+        if (!userIn || !passIn) {
+            showModal('<p style="text-align:center;">USERNAME ATAU PASSWORD SALAH PERIKSA LALU COBA KEMBALI</p>');
+            return;
+        }
+
+        if (userIn === DEV_ACCOUNT.username && passIn === DEV_ACCOUNT.password) {
+            currentUser = { username: DEV_ACCOUNT.username, role: 'developer', expired: 'PERMANEN' };
+            isDeveloper = true;
+            isResselier = false;
+            showPage('dashboard');
+            showModal('<p style="text-align:center;">HALO ' + currentUser.username.toUpperCase() + '</p>', true);
+            return;
+        }
+
+        db.ref('users/' + userIn).once('value').then((snapshot) => {
+            const userData = snapshot.val();
+            if (userData && userData.password === passIn) {
+                let isExpired = false;
+                if (userData.expired !== 'PERMANEN' && userData.expired !== 'Permanen' && userData.expired !== 'permanen' && userData.expired !== 'manen' && userData.expired !== '0') {
+                    const expDate = new Date(userData.expired);
+                    const now = new Date();
+                    if (now > expDate) {
+                        isExpired = true;
+                    }
+                }
+
+                if (isExpired) {
+                    currentUser = null;
+                    isDeveloper = false;
+                    isResselier = false;
+                    showPage('expired');
+                } else {
+                    currentUser = { 
+                        username: userIn, 
+                        role: userData.role || 'user', 
+                        expired: userData.expired 
+                    };
+                    isDeveloper = (userData.role === 'developer');
+                    isResselier = (userData.role === 'resseler');
+                    showPage('dashboard');
+                    showModal('<p style="text-align:center;">HALO ' + currentUser.username.toUpperCase() + '</p>', true);
+                }
+            } else {
+                showModal('<p style="text-align:center;">USERNAME ATAU PASSWORD SALAH PERIKSA LALU COBA KEMBALI</p>');
+            }
+        }).catch((error) => {
+            console.error(error);
+            showModal('<p style="text-align:center;">Terjadi kesalahan koneksi database.</p>');
+        });
+    });
+
+    function logout() {
+        currentUser = null;
+        isDeveloper = false;
+        isResselier = false;
+        document.getElementById('login-username').value = '';
+        document.getElementById('login-password').value = '';
+        document.getElementById('login-password').type = 'password';
+        document.getElementById('eye-open').style.display = 'block';
+        document.getElementById('eye-closed').style.display = 'none';
+        showPage('login');
+    }
+
+    document.getElementById('btn-logout').addEventListener('click', logout);
+
+    // ============================================================
+    // FUNGSI NAVIGASI TOOLBAR
+    // ============================================================
+    document.querySelectorAll('.toolbar-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const targetPage = this.dataset.page;
+            if (targetPage === 'control' && !isDeveloper && !isResselier) return;
+            showPage(targetPage);
+        });
+    });
+
+    // ============================================================
+    // FITUR UPGARDE AM
+    // ============================================================
+    document.getElementById('btn-tutor').addEventListener('click', function() {
+        showTutorEmailForm();
+    });
+
+    function showTutorEmailForm() {
+        const content = `
+            <p style="text-align:center; font-size: 8px; margin-bottom:10px;">CARA UPGARDE AM PREMIUM:<br>
+            1. MASUKKAN EMAIL KAMU<br>
+            2. KIRIM MAGIC LINK DARI EMAIL<br>
+            3. DONE, AM PREMIUM AKTIF.</p>
+            <p style="text-align:center; font-size: 10px; font-weight: bold;">MASUKKAN EMAIL</p>
+            <input type="email" id="tutor-email" placeholder="email@contoh.com">
+            <button class="btn-modal" id="btn-kirim-email">KIRIM</button>
+        `;
+        showModal(content);
+
+        document.getElementById('btn-kirim-email').onclick = function() {
+            const email = document.getElementById('tutor-email').value.trim();
+            if (!email) {
+                alert('Masukkan email terlebih dahulu!');
+                return;
+            }
+
+            this.textContent = 'MENGIRIM...';
+            this.disabled = true;
+
+            const requestBody = new URLSearchParams();
+            requestBody.append('email', email);
+
+            fetch(API_KEY_URL, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                },
+                body: requestBody.toString()
+            })
+            .then(async response => {
+                const text = await response.text();
+                console.log("Response API (Email):", text);
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    throw new Error("Response bukan JSON: " + text);
+                }
+            })
+            .then(data => {
+                if (data.status === 'success' || data.success === true || data.status === true) {
+                    saveHistory(email, 'Berhasil');
+                    pendingEmail = email;
+                    showTutorMagicLinkForm(email);
+                } else {
+                    saveHistory(email, 'Gagal');
+                    showModal('<p style="text-align:center;">Request Gagal: ' + (data.message || data.msg || 'Terjadi kesalahan') + '</p>', true);
+                    setTimeout(showTutorEmailForm, 3000);
+                }
+            })
+            .catch(err => {
+                console.error("Error Fetch Email:", err);
+                saveHistory(email, 'Gagal');
+                showModal('<p style="text-align:center;">Request Gagal: ' + err.message + '</p>', true);
+                setTimeout(showTutorEmailForm, 3000);
+            });
+        };
+    }
+
+    function showTutorMagicLinkForm(email) {
+        const content = `
+            <p style="text-align:center; font-size: 8px; margin-bottom:10px; white-space: pre-line;">CARA MENGAMBIL MAGIC LINK:
+1. BUKA APK GMAIL MENGGUNAKAN AKUN ${email}
+2. CEK UTAMA/SPAM
+3. CARI PESAN "NOREPLY"
+4. CARI TEXT "LOGIN KE ALIGHT CREATIVE"
+5. TEKAN TEXT NYA (TEKAN BUKAN PENCET)
+6. SALIN LINK
+7. KIRIM LINK NYA KE SINI</p>
+            <p style="text-align:center; font-size: 10px; font-weight: bold;">MASUKKAN LINK VERIFIKASI</p>
+            <input type="text" id="tutor-magiclink" placeholder="Tempel magic link di sini">
+            <button class="btn-modal" id="btn-kirim-link">KIRIM</button>
+        `;
+        showModal(content);
+
+        document.getElementById('btn-kirim-link').onclick = function() {
+            const link = document.getElementById('tutor-magiclink').value.trim();
+            if (!link) {
+                alert('Masukkan magic link terlebih dahulu!');
+                return;
+            }
+
+            this.textContent = 'VERIFIKASI...';
+            this.disabled = true;
+
+            const requestBody = new URLSearchParams();
+            requestBody.append('email', pendingEmail);
+            requestBody.append('link', link);
+
+            fetch(API_KEY_URL, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json'
+                },
+                body: requestBody.toString()
+            })
+            .then(async response => {
+                const text = await response.text();
+                console.log("Response API (Link):", text);
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    throw new Error("Response bukan JSON: " + text);
+                }
+            })
+            .then(data => {
+                if (data.status === 'success' || data.success === true || data.status === true) {
+                    saveHistory(pendingEmail, 'Berhasil');
+                    showModal('<p style="text-align:center;">VERIFIKASI BERHASIL! AM PREMIUM AKTIF.</p>', true);
+                    pendingEmail = '';
+                    setTimeout(showTutorEmailForm, 3000);
+                } else {
+                    saveHistory(pendingEmail, 'Gagal');
+                    showModal('<p style="text-align:center;">Verifikasi Gagal: ' + (data.message || data.msg || 'Link tidak valid') + '</p>', true);
+                    setTimeout(showTutorEmailForm, 3000);
+                }
+            })
+            .catch(err => {
+                console.error("Error Fetch Link:", err);
+                saveHistory(pendingEmail, 'Gagal');
+                showModal('<p style="text-align:center;">Verifikasi Gagal: ' + err.message + '</p>', true);
+                setTimeout(showTutorEmailForm, 3000);
+            });
+        };
+    }
+
+    // ============================================================
+    // FITUR HISTORY (LOCAL STORAGE)
+    // ============================================================
+    function saveHistory(email, status) {
+        let history = JSON.parse(localStorage.getItem('am_history')) || [];
+        history.push({
+            email: email,
+            status: status,
+            timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('am_history', JSON.stringify(history));
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('history-list');
+        let history = JSON.parse(localStorage.getItem('am_history')) || [];
+        
+        if (history.length === 0) {
+            list.innerHTML = '<p style="font-size: 9px; text-align: center; color: #777;">Belum ada riwayat.</p>';
+            return;
+        }
+
+        history.reverse();
+
+        let html = '';
+        history.forEach(item => {
+            const statusClass = item.status === 'Berhasil' ? 'status-sukses' : 'status-gagal';
+            html += `
+                <div class="history-item">
+                    <span>${item.email}</span>
+                    <span class="${statusClass}">${item.status}</span>
+                </div>
+            `;
+        });
+        list.innerHTML = html;
+    }
+
+    // ============================================================
+    // FITUR DEVELOPER & RESSELER
+    // ============================================================
+    document.getElementById('btn-buat-akun').addEventListener('click', function() {
+        const username = document.getElementById('buat-username').value.trim();
+        const password = document.getElementById('buat-password').value.trim();
+        const expiredInput = document.getElementById('buat-expired').value.trim();
+        let role = document.getElementById('buat-role').value;
+
+        if (!username || !password || !expiredInput) {
+            alert('Semua field harus diisi!');
+            return;
+        }
+
+        if (isResselier && !isDeveloper) {
+            role = 'user';
+        }
+
+        db.ref('users/' + username).once('value').then((snapshot) => {
+            if (snapshot.exists()) {
+                alert('Username sudah terdaftar!');
+                return;
+            }
+
+            let expiredValue = expiredInput;
+            const lowerInput = expiredInput.toLowerCase();
+            if (lowerInput === 'permanen' || lowerInput === 'permanent' || lowerInput === 'manen' || expiredInput === '0') {
+                expiredValue = 'PERMANEN';
+            } else {
+                const days = parseInt(expiredInput);
+                if (isNaN(days)) {
+                    alert('Expired harus berupa angka atau "PERMANEN"!');
+                    return;
+                }
+                const expDate = new Date();
+                expDate.setDate(expDate.getDate() + days);
+                expiredValue = expDate.toISOString();
+            }
+
+            db.ref('users/' + username).set({
+                username: username,
+                password: password,
+                expired: expiredValue,
+                role: role,
+                created_at: new Date().toISOString()
+            }).then(() => {
+                let expText = expiredValue === 'PERMANEN' ? 'PERMANEN' : expiredValue.split('T')[0];
+                showModal(`<p style="text-align:center;">AKUN ${username} DENGAN ROLE ${role} ${expText} BERHASIL DIBUAT</p>`, true);
+                document.getElementById('buat-username').value = '';
+                document.getElementById('buat-password').value = '';
+                document.getElementById('buat-expired').value = '';
+            }).catch((error) => {
+                console.error(error);
+                alert('Gagal membuat akun: ' + error.message);
+            });
+        });
+    });
+
+    document.getElementById('btn-perpanjang').addEventListener('click', function() {
+        const username = document.getElementById('panjang-username').value.trim();
+        const daysInput = document.getElementById('panjang-expired').value.trim();
+
+        if (!username || !daysInput) {
+            alert('Username dan Expired harus diisi!');
+            return;
+        }
+
+        const days = parseInt(daysInput);
+        if (isNaN(days)) {
+            alert('Expired harus berupa angka!');
+            return;
+        }
+
+        db.ref('users/' + username).once('value').then((snapshot) => {
+            if (!snapshot.exists()) {
+                alert('Username tidak ditemukan!');
+                return;
+            }
+
+            const userData = snapshot.val();
+            let currentExp = userData.expired;
+
+            if (isResselier && !isDeveloper) {
+                if (userData.role === 'resseler' || userData.role === 'developer') {
+                    alert('Anda tidak memiliki izin untuk memperpanjang akun ini!');
+                    return;
+                }
+            }
+
+            if (currentExp === 'PERMANEN') {
+                alert('Akun ini sudah PERMANEN, tidak perlu diperpanjang.');
+                return;
+            }
+
+            let baseDate = new Date();
+            if (currentExp && currentExp !== 'PERMANEN') {
+                const oldDate = new Date(currentExp);
+                if (oldDate > baseDate) {
+                    baseDate = oldDate;
+                }
+            }
+            baseDate.setDate(baseDate.getDate() + days);
+            const newExp = baseDate.toISOString();
+
+            db.ref('users/' + username).update({
+                expired: newExp
+            }).then(() => {
+                showModal(`<p style="text-align:center;">AKUN ${username} BERHASIL DIPERPANJANG ${days} HARI</p>`, true);
+                document.getElementById('panjang-username').value = '';
+                document.getElementById('panjang-expired').value = '';
+            }).catch((error) => {
+                console.error(error);
+                alert('Gagal memperpanjang: ' + error.message);
+            });
+        });
+    });
+
+    // ============================================================
+    // FITUR TOMBOL BELI AKSES
+    // ============================================================
+    document.getElementById('link-beli').addEventListener('click', function() {
+        window.open('https://wa.me/6285134733477?text=bang+wann+mau+beli+akses+upgrade+am+premium', '_blank');
+    });
+
+    // ============================================================
+    // INISIALISASI AWAL
+    // ============================================================
+    showPage('login');
+
+</script>
+</body>
+</html>
